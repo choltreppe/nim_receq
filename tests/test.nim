@@ -108,7 +108,7 @@ test "non object refs":
   new t2b
   t2b[] = "foo"
 
-  check Test(x: t2a) ==* Test(x: t2b)
+  check: Test(x: t2a) ==* Test(x: t2b)
 
 
 
