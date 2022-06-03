@@ -4,14 +4,7 @@ import std/[macros, genasts, strutils, sequtils, enumerate]
 macro genRecEq(td: type, left, right: untyped): untyped =
   result = newStmtList()
 
-  func baseType(td: NimNode): string =
-    case td.kind
-      of nnkBracketExpr: td[0].strVal
-      else             : td.strVal
-
-  let
-    typeDef    = td.getTypeImpl[1].baseType
-    typeStruct = td.getType[1][1].getTypeImpl
+  let typeStruct = td.getType[1][1].getTypeImpl
 
   var
     baseFields  : seq[NimNode]
@@ -49,9 +42,9 @@ macro genRecEq(td: type, left, right: untyped): untyped =
         else: discard
 
       var comps: seq[NimNode]
-      for field in fields:
+      for field in (if fields.kind == nnkRecList: fields.toSeq else: @[fields]):
         comps.add:
-          if cmpIgnoreStyle(field[1].baseType, typeDef) == 0:
+          if (if field[1].kind == nnkBracketExpr: field[1][0] else: field[1]).getTypeImpl.kind == nnkRefTy:
             genAst(left, right, field = field[0]):
               left.field ==* right.field
           else:

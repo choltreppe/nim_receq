@@ -72,6 +72,22 @@ test "with fields not part of variants":
 
 
 
+test "mutual recursion":
+  type
+    A = ref object
+      case x: bool
+        of true: b: B
+        else: discard
+    B = ref object
+      case x: bool
+        of true: a: A
+        else: discard
+
+  check: A(x: true, b: B(x: true, a : A(x: false))) ==* A(x: true, b: B(x: true, a : A(x: false)))
+  check: A(x: true, b: B(x: true, a : A(x: false))) !=* A(x: true, b: B(x: false))
+
+
+
 test "without variants (not recursive so kinda useless)":
   type Test = ref object
     a, b: string
