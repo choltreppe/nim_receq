@@ -1,4 +1,4 @@
-import std/[macros, genasts, strutils, sequtils, enumerate]
+import std/[macros, genasts, sequtils, enumerate]
 
 
 macro genRecEq(td: type, left, right: untyped): untyped =
@@ -12,16 +12,23 @@ macro genRecEq(td: type, left, right: untyped): untyped =
   for i, field in enumerate(typeStruct[2]):
     case field.kind
       of nnkIdentDefs:
-        baseFields.add field[0]
+        baseFields.add field
       of nnkRecCase:
         variantCases = field
       else: discard
 
+  func genComp(left, right, field: NimNode): NimNode =
+    if (if field[1].kind == nnkBracketExpr: field[1][0] else: field[1]).getTypeImpl.kind == nnkRefTy:
+      genAst(left, right, field = field[0]):
+        left.field ==* right.field
+    else:
+      genAst(left, right, field = field[0]):
+        left.field == right.field
+
   if len(baseFields) > 0:
     let cond =
       baseFields
-      .mapIt(genAst(it, left, right) do:
-          left.it == right.it)
+      .mapIt(genComp(left, right, it))
       .foldl(infix(a, "and", b))
     result.add: genAst(cond):
       if not cond: return false
@@ -43,13 +50,7 @@ macro genRecEq(td: type, left, right: untyped): untyped =
 
       var comps: seq[NimNode]
       for field in (if fields.kind == nnkRecList: fields.toSeq else: @[fields]):
-        comps.add:
-          if (if field[1].kind == nnkBracketExpr: field[1][0] else: field[1]).getTypeImpl.kind == nnkRefTy:
-            genAst(left, right, field = field[0]):
-              left.field ==* right.field
-          else:
-            genAst(left, right, field = field[0]):
-              left.field == right.field
+        comps.add: genComp(left, right, field)
 
       if len(comps) == 0:
         branch.add: genAst: true
@@ -68,6 +69,10 @@ macro genRecEq(td: type, left, right: untyped): untyped =
 
 func `==*`*[T: ref object](left, right: T): bool =
   genRecEq(T, left, right)
+
+
+func `==*`*[X: not object, T: ref X](left, right: T): bool =
+  left[] == right[]
 
 
 template `!=*`*[T: ref object](left, right: T): bool =

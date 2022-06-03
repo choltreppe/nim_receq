@@ -88,6 +88,30 @@ test "mutual recursion":
 
 
 
+test "non object refs":
+  var t1a: ref int
+  new t1a
+  t1a[] = 42
+  var t1b: ref int
+  new t1b
+  t1b[] = 42
+
+  check: t1a ==* t1b
+
+  type Test = ref object
+    x: ref string
+
+  var t2a: ref string
+  new t2a
+  t2a[] = "foo"
+  var t2b: ref string
+  new t2b
+  t2b[] = "foo"
+
+  check Test(x: t2a) ==* Test(x: t2b)
+
+
+
 test "without variants (not recursive so kinda useless)":
   type Test = ref object
     a, b: string
