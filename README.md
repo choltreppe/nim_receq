@@ -19,10 +19,10 @@ func val(x: Tree): Tree = x
 template tree(l: untyped, x: int, r: untyped): Tree =
   Tree(isLeaf: false, left: val l, val: x, right: val r)
 
-check: val(1) ==* val(1)
-check: val(1) !=* val(2)
-check: val(1) !=* tree(1, 2, 3)
-check: tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9)) ==* tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9))
-check: tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9)) !=* tree(tree(1, 2, 3), 4, tree(tree(6, 6, 7), 8, 9))
-check: tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9)) !=* tree(tree(1, 2, 3), 4, tree(5, 8, 9))
+assert: val(1) ==* val(1)
+assert: val(1) !=* val(2)
+assert: val(1) !=* tree(1, 2, 3)
+assert: tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9)) ==* tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9))
+assert: tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9)) !=* tree(tree(1, 2, 3), 4, tree(tree(6, 6, 7), 8, 9))
+assert: tree(tree(1, 2, 3), 4, tree(tree(5, 6, 7), 8, 9)) !=* tree(tree(1, 2, 3), 4, tree(5, 8, 9))
 ```
