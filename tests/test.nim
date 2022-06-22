@@ -72,6 +72,29 @@ test "with fields not part of variants":
 
 
 
+test "with multiple/nested variants":
+  type Test = ref object
+    case a: bool
+      of true: b: int
+      of false:
+        case c: bool
+          of true: d: Test
+          of false: discard
+    case f: bool
+      of true: g: int
+      of false: discard
+    h: int
+
+  check:
+    Test(a: false, c: true, d: Test(a: true, b: 0, f: false, h: 10), f: false, h: 3) ==*
+    Test(a: false, c: true, d: Test(a: true, b: 0, f: false, h: 10), f: false, h: 3)
+  check: Test(a: true, b: 4, f: false, h: 2) ==* Test(a: true, b: 4, f: false, h: 2)
+
+  check: Test(a: true, b: 4, f: false, h: 2) !=* Test(a: false, c: false, f: false, h: 2)
+  check: Test(a: true, b: 4, f: false, h: 2) !=* Test(a: true, b: 4, f: true, g: 0, h: 2)
+
+
+
 test "mutual recursion":
   type
     A = ref object
