@@ -60,7 +60,7 @@ test "with fields not part of variants":
   func val(x: int ): Tree = Tree(isLeaf: true, val: x)
   func val(x: Tree): Tree = x
 
-  template tree(l: untyped, x: int, r: untyped): Tree =
+  func tree(l: int|Tree, x: int, r: int|Tree): Tree =
     Tree(isLeaf: false, left: val l, val: x, right: val r)
 
   check: val(1) ==* val(1)

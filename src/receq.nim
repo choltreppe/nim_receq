@@ -59,7 +59,6 @@ macro genRecEq(td: type, left, right: untyped): untyped =
 
   result = gen(td.getType[1][1].getTypeImpl[2].toSeq)
   result.add: genAst: true
-  
 
 func `==*`*[T: ref object](left, right: T): bool =
   genRecEq(T, left, right)
