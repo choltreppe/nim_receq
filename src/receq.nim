@@ -46,7 +46,6 @@ macro impl[T: object](a, b: T): untyped =
 
   result = gen(a.getTypeImpl[2], a,b)
   result.add ident"true"
-  debugEcho result.repr
 
 func `==*`*[T: object](a, b: T): bool = impl(a, b)
 
