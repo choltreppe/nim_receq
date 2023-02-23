@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.1.1"
 author        = "Joel Lienhard"
 description   = "A generator for comparison of recursive ref object types"
 license       = "MIT"
