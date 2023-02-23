@@ -1,72 +1,54 @@
-import std/[macros, genasts, sequtils, enumerate]
+import std/[macros, sequtils]
 
 
-macro genRecEq(td: type, left, right: untyped): untyped =
-  let
-    left: NimNode = left
-    right: NimNode = right
+func `==*`*[T: not(ref|object)](a, b: T): bool = a == b
 
-  func gen(fields: seq[NimNode]): NimNode =
+func `==*`*[T: ref](a, b: T): bool = a[] ==* b[]
+
+macro impl[T: object](a, b: T): untyped =
+
+  func gen(nodes: NimNode|seq[NimNode], a,b: NimNode): NimNode =
     result = newStmtList()
+    var normalFields: seq[NimNode]
+    for node in nodes:
+      if node.kind == nnkRecCase:
+        let discriminatorField = node[0][0]
+        let discriminatorA = quote do: `a`.`discriminatorField`
+        let discriminatorB = quote do: `b`.`discriminatorField`
+        result.add: quote do:
+          if not(`discriminatorA` ==* `discriminatorB`):
+            return false
 
-    var
-      baseFields  : seq[NimNode]
-      variantCases: seq[NimNode]
-    for i, field in enumerate(fields):
-      case field.kind
-        of nnkIdentDefs:
-          baseFields.add field
-        of nnkRecCase:
-          variantCases.add field
-        else: discard
+        var caseStmt = nnkCaseStmt.newTree(discriminatorA)
+        for branch in node[1 .. ^1]:
+          caseStmt.add:
+            if branch.kind == nnkOfBranch:
+              if branch[1].kind == nnkRecList:
+                nnkOfBranch.newTree(branch[0], gen(branch[1], a,b))
+              else:
+                nnkOfBranch.newTree(branch[0], gen(branch[1..^1], a,b))
+            else:
+              if branch[0].kind == nnkRecList:
+                nnkElse.newTree(gen(branch[0], a,b))
+              else:
+                nnkElse.newTree(gen(branch, a,b))
+        result.add caseStmt
 
-    func genComp(left, right, field: NimNode): NimNode =
-      if (if field[1].kind == nnkBracketExpr: field[1][0] else: field[1]).getTypeImpl.kind == nnkRefTy:
-        genAst(left, right, field = field[0]):
-          left.field ==* right.field
       else:
-        genAst(left, right, field = field[0]):
-          left.field == right.field
+        normalFields.add node[0]
 
-    if len(baseFields) > 0:
-      let cond =
-        baseFields
-        .mapIt(genComp(left, right, it))
-        .foldl(infix(a, "and", b))
-      result.add: genAst(cond):
-        if not cond: return false
+    if len(normalFields) > 0:
+      let cond = normalFields.
+        mapIt(quote do: `a`.`it` ==* `b`.`it`).
+        foldl(quote do: `a` and `b`)
+      result.add: quote do:
+        if not `cond`: return false
 
-    for variantCases in variantCases:
-      let variantSwitch = variantCases[0][0]
-      var cases = nnkCaseStmt.newTree(newDotExpr(left, variantSwitch))
-      for c in variantCases[1..^1]:
-        proc addCase(branch, fields: NimNode) =
-          let fields =
-            if fields.kind == nnkRecList: fields.toSeq
-            else: @[fields]
-          cases.add branch.add(gen(fields))
-        case c.kind
-          of nnkOfBranch:
-            addCase nnkOfBranch.newTree(c[0]), c[1]
-          of nnkElse:
-            addCase nnkElse.newTree, c[0]
-          else: discard
+  result = gen(a.getTypeImpl[2], a,b)
+  result.add ident"true"
+  debugEcho result.repr
 
-      result.add: genAst(cases, variantSwitch, left, right):
-        if left.variantSwitch != right.variantSwitch:
-          return false
-        cases
-
-  result = gen(td.getType[1][1].getTypeImpl[2].toSeq)
-  result.add: genAst: true
-
-func `==*`*[T: ref object](left, right: T): bool =
-  genRecEq(T, left, right)
+func `==*`*[T: object](a, b: T): bool = impl(a, b)
 
 
-func `==*`*[X: not object, T: ref X](left, right: T): bool =
-  left[] == right[]
-
-
-template `!=*`*[T: ref object](left, right: T): bool =
-  not (left ==* right) 
+template `!=*`*[T](a, b: T): bool = not(a ==* b)
